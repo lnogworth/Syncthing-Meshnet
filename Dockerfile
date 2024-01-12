@@ -81,3 +81,7 @@ COPY root/ /
 # ports and volumes
 EXPOSE 8384 22000/tcp 22000/udp 21027/UDP
 VOLUME /config
+
+# Make sure NordVPN service is running before logging in and launching Meshnet
+ENV S6_CMD_WAIT_FOR_SERVICES=1
+CMD nordvpn_login && meshnet_config && meshnet_watch
