@@ -4,6 +4,8 @@ FROM ghcr.io/linuxserver/baseimage-alpine:3.18 as buildstage
 
 # build variables
 ARG SYNCTHING_RELEASE
+ARG NORDVPN_CLIENT_VERSION=3.16.9
+ARG DEBIAN_FRONTEND=noninteractive 
 
 RUN \
  echo "**** install build packages ****" && \
@@ -32,6 +34,28 @@ RUN \
     -no-upgrade \
     -version=${SYNCTHING_RELEASE} \
     build syncthing
+
+# Install dependencies, get the NordVPN Repo, install NordVPN client, cleanup and set executables
+RUN echo "**** Get NordVPN Repo ****" && \
+    curl https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn-release_1.0.0_all.deb --output /tmp/nordvpnrepo.deb && \
+    apt-get install -y /tmp/nordvpnrepo.deb && \
+    apt-get update -y && \
+    echo "**** Install NordVPN client ****" && \
+    apt-get install -y nordvpn${NORDVPN_CLIENT_VERSION:+=$NORDVPN_CLIENT_VERSION} && \
+    apt-get update && \
+    echo "**** Cleanup ****" && \
+    apt-get remove -y nordvpn-release && \
+    apt-get autoremove -y && \
+    apt-get autoclean -y && \
+    rm -rf \
+		/tmp/* \
+		/var/cache/apt/archives/* \
+		/var/lib/apt/lists/* \
+		/var/tmp/* \
+    echo "**** Finished software setup ****"
+
+# Copy all the files we need in the container
+COPY /fs /
 
 ############## runtime stage ##############
 FROM ghcr.io/linuxserver/baseimage-alpine:3.18
